@@ -1,0 +1,777 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.header-search {
+    flex: 1 1 auto;
+    position: relative;
+}
+
+.header-search-input {
+    width: 100%;
+    max-width: 260px;
+}
+
+.search-suggestions {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    width: 100%;
+    max-width: 260px;
+    background: #050505;
+    border-radius: 8px;
+    border: 1px solid #333;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+    max-height: 260px;
+    overflow-y: auto;
+    font-size: 13px;
+    z-index: 25;
+    display: none;
+}
+
+.search-suggestions.visible {
+    display: block;
+}
+
+.search-suggestion-item {
+    padding: 6px 8px;
+    cursor: pointer;
+    color: #f5f5f5;
+}
+
+.search-suggestion-item:hover {
+    background: #111;
+}
+
+.search-suggestion-item.active {
+    background: #222;
+}
+
+/* 亮色主题下的搜索下拉样式 */
+body.theme-light .search-suggestions {
+    background: #ffffff;
+    border-color: #d0d0d0;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+}
+
+body.theme-light .search-suggestion-item {
+    color: #111111;
+}
+
+body.theme-light .search-suggestion-item:hover {
+    background: #f3f3f3;
+}
+
+body.theme-light .search-suggestion-item.active {
+    background: #e5e5e5;
+}
+
+html,
+body {
+    height: 100%;
+}
+
+body {
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    background: #000;
+    color: #f5f5f5;
+}
+
+button,
+input,
+select {
+    font-family: inherit;
+}
+
+.app-shell {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.app-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 20px;
+    border-bottom: 1px solid #333;
+    background: #000;
+}
+
+.logo {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.logo-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* 头部右侧的主题切换和“关于”按钮：视觉上无边框 */
+.header-actions .ghost-button {
+    border-color: transparent;
+}
+
+.header-actions .icon-toggle {
+    border: none;
+}
+
+body.theme-light .header-actions .ghost-button,
+body.theme-light .header-actions .icon-toggle {
+    border-color: transparent;
+}
+
+.app-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: minmax(320px, 380px) minmax(0, 1fr);
+    gap: 1px;
+    background: #111;
+    overflow: hidden;
+}
+
+.panel {
+    padding: 20px;
+    background: #000;
+}
+
+.panel-left {
+    border-right: 1px solid #111;
+    overflow-y: auto;
+}
+
+.panel-right {
+    overflow-y: auto;
+}
+
+.panel-title {
+    font-size: 18px;
+    margin-bottom: 6px;
+}
+
+.panel-subtitle {
+    font-size: 13px;
+    color: #aaa;
+    margin-bottom: 18px;
+}
+
+.field-label-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.icon-help {
+    border: none;
+    background: transparent;
+    color: #aaa;
+    font-size: 12px;
+    width: 18px;
+    height: 18px;
+    border-radius: 999px;
+    border: 1px solid #555;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.icon-help:hover {
+    color: #fff;
+    border-color: #888;
+}
+
+.help-text {
+    margin-top: 6px;
+    font-size: 11px;
+    color: #777;
+}
+
+.hidden {
+    display: none;
+}
+
+.about-author {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 12px;
+    color: #999;
+}
+
+.panel-subsection {
+    margin-top: 12px;
+}
+
+.subsection-title {
+    font-size: 14px;
+    margin-bottom: 8px;
+}
+
+.color-inputs {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.color-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-preview {
+    width: 28px;
+    height: 28px;
+    border-radius: 999px;
+    border: 1px solid #555;
+}
+
+.color-input-row {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.color-input-row input[type="color"] {
+    -webkit-appearance: none;
+    appearance: none;
+    border: none;
+    padding: 0;
+    background: transparent;
+    width: 40px;
+    height: 24px;
+}
+
+.color-input-row input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+
+.color-input-row input[type="color"]::-webkit-color-swatch {
+    border: 1px solid #555;
+}
+
+.color-hex {
+    flex: 1;
+}
+
+.color-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.match-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: 18px;
+    margin-bottom: 18px;
+}
+
+.primary-button,
+.ghost-button {
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #f5f5f5;
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.primary-button {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+}
+
+.primary-button:hover {
+    background: #e4e4e4;
+    border-color: #e4e4e4;
+}
+
+.primary-button-full {
+    width: 100%;
+    margin-top: 8px;
+}
+
+.ghost-button {
+    /* 默认按钮保留边框，header 内的再单独去掉 */
+    border-color: #444;
+}
+
+.ghost-button:hover {
+    background: #111;
+}
+
+.icon-button {
+    border: none;
+    background: transparent;
+    color: #f5f5f5;
+    cursor: pointer;
+    font-size: 18px;
+}
+
+.icon-toggle {
+    border-radius: 999px;
+    border: 1px solid #444;
+    background: transparent;
+    color: #f5f5f5;
+    cursor: pointer;
+    width: 30px;
+    height: 30px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+}
+
+.icon-toggle:hover {
+    background: #111;
+}
+
+.theme-icon {
+    display: none;
+}
+
+body:not(.theme-light) #theme-icon-moon {
+    display: block;
+}
+
+body.theme-light #theme-icon-sun {
+    display: block;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.field-label {
+    font-size: 12px;
+    color: #aaa;
+}
+
+.input,
+.select {
+    background: #050505;
+    border-radius: 4px;
+    border: 1px solid #333;
+    color: #f5f5f5;
+    padding: 6px 8px;
+    font-size: 13px;
+}
+
+.input:focus,
+.select:focus {
+    outline: 1px solid #888;
+    outline-offset: 1px;
+}
+
+.field-group {
+    margin-bottom: 14px;
+}
+
+.field-range {
+    grid-column: 1 / -1;
+}
+
+.field-inline {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.field-inline-item {
+    flex: 1 1 0;
+}
+
+.checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+}
+
+.checkbox input[type="checkbox"] {
+    width: 14px;
+    height: 14px;
+}
+
+.field-inline-flags {
+    align-items: center;
+}
+
+.range {
+    width: 100%;
+    accent-color: #ffffff;
+}
+
+.results-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+
+.active-filters {
+    font-size: 12px;
+    color: #888;
+    text-align: right;
+}
+
+.results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.card {
+    border-radius: 10px;
+    border: 1px solid #222;
+    padding: 8px;
+    background: #050505;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+}
+
+.card-name {
+    font-weight: 500;
+}
+
+.card-index {
+    color: #777;
+}
+
+.card-img-wrap {
+    background: #000;
+    border-radius: 6px;
+    border: 1px solid #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+}
+
+.card-img-wrap img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+.card-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 11px;
+}
+
+.card-color-bar {
+    margin-top: 4px;
+    height: 6px;
+    border-radius: 999px;
+    background: #333;
+    overflow: hidden;
+    display: flex;
+}
+
+.card-color-segment {
+    flex: 1 1 0;
+    height: 100%;
+}
+
+.tag {
+    border-radius: 999px;
+    border: 1px solid #333;
+    padding: 1px 6px;
+}
+
+.tag-weak {
+    border-style: dashed;
+}
+
+.tag-multi-select {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    border-radius: 6px;
+    border: 1px solid #333;
+    padding: 4px;
+}
+
+.tag-option {
+    font-size: 12px;
+    border-radius: 999px;
+    border: 1px solid #333;
+    padding: 2px 8px;
+    cursor: pointer;
+}
+
+.tag-option.selected {
+    /* 选中时用额外描边强调，背景仍由 JS 按属性色控制 */
+    box-shadow: 0 0 0 2px #ffffff;
+    border-color: #ffffff;
+}
+
+.modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 20;
+}
+
+.modal[aria-hidden="false"] {
+    display: flex;
+}
+
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+}
+
+.modal-dialog {
+    position: relative;
+    max-width: 420px;
+    width: 100%;
+    margin: 0 16px;
+    background: #050505;
+    border-radius: 12px;
+    border: 1px solid #333;
+    padding: 14px 16px 12px;
+    z-index: 21;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.modal-title {
+    font-size: 16px;
+}
+
+.modal-body {
+    font-size: 13px;
+    color: #ddd;
+}
+
+.modal-footer {
+    margin-top: 14px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+}
+
+.toast {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 16px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.95);
+    color: #000;
+    font-size: 12px;
+    border: 1px solid #000;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 30;
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+}
+
+/* 亮色主题覆盖 */
+body.theme-light {
+    background: #ffffff;
+    color: #111111;
+}
+
+body.theme-light .app-header {
+    background: #ffffff;
+    border-bottom-color: #e0e0e0;
+}
+
+body.theme-light .app-main {
+    background: #f1f1f1;
+}
+
+body.theme-light .panel {
+    background: #ffffff;
+}
+
+body.theme-light .panel-left {
+    border-right-color: #e8e8e8;
+}
+
+body.theme-light .primary-button {
+    background: #000000;
+    color: #ffffff;
+    border-color: #000000;
+}
+
+body.theme-light .primary-button:hover {
+    background: #222222;
+    border-color: #222222;
+}
+
+body.theme-light .ghost-button,
+body.theme-light .icon-toggle {
+    border-color: #cccccc;
+    color: #111111;
+}
+
+body.theme-light .ghost-button:hover,
+body.theme-light .icon-toggle:hover {
+    background: #f3f3f3;
+}
+
+body.theme-light .input,
+body.theme-light .select {
+    background: #ffffff;
+    color: #111111;
+    border-color: #d0d0d0;
+}
+
+body.theme-light .range {
+    accent-color: #000000;
+}
+
+body.theme-light .card {
+    background: #ffffff;
+    border-color: #e0e0e0;
+}
+
+body.theme-light .card-img-wrap {
+    background: #f9f9f9;
+    border-color: #e5e5e5;
+}
+
+body.theme-light .tag,
+body.theme-light .tag-option {
+    border-color: #d0d0d0;
+}
+
+body.theme-light .tag-option.selected {
+    box-shadow: 0 0 0 2px #000000;
+    border-color: #000000;
+}
+
+body.theme-light .modal-dialog {
+    background: #ffffff;
+    border-color: #e0e0e0;
+}
+
+body.theme-light .modal-body {
+    color: #333333;
+}
+
+body.theme-light .toast {
+    background: rgba(0, 0, 0, 0.9);
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+@media (max-width: 800px) {
+    .app-main {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto auto;
+    }
+
+    /* 移动端整体 header 更紧凑一点 */
+    .app-header {
+        padding: 6px 12px;
+    }
+
+    .header-left {
+        gap: 6px;
+    }
+
+    .header-actions {
+        gap: 4px;
+    }
+
+    /* 移动端：缩小 logo 文本字号，避免占太多空间 */
+    .logo span {
+        font-size: 11px;
+    }
+
+    /* 让“关于”等文字按钮更紧凑且不换行 */
+    .header-actions .ghost-button {
+        padding: 4px 8px;
+        font-size: 12px;
+        white-space: nowrap;
+    }
+
+    .header-actions .icon-toggle {
+        width: 28px;
+        height: 28px;
+        font-size: 14px;
+    }
+
+    .header-search-input {
+        max-width: none;
+    }
+
+    .panel-left {
+        border-right: none;
+        border-bottom: 1px solid #111;
+    }
+
+    /* 中等宽度移动端：尝试一行显示 3 个卡片 */
+    .results-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+}
+
+/* 特别窄的屏幕上，为避免水平滚动，降级为每行 2 个卡片 */
+@media (max-width: 480px) {
+    .results-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}

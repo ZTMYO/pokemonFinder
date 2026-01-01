@@ -1,0 +1,4 @@
+# Ignore color processing helper scripts and state
+color_editor.py
+kmeans_colors.py
+.color_editor_state.json
