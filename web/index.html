@@ -31,14 +31,15 @@
                         <path fill="currentColor" d="M11.998 16.2a4.2 4.2 0 1 1 0-8.4 4.2 4.2 0 0 1 0 8.4m0 1.8a6 6 0 1 0 0-12 6 6 0 0 0 0 12M11.998.1a.9.9 0 0 1 .9.9v2a.9.9 0 0 1-1.8 0V1a.9.9 0 0 1 .9-.9M3.583 3.585a.9.9 0 0 1 1.273 0L6.27 4.999a.9.9 0 0 1-1.273 1.273L3.583 4.858a.9.9 0 0 1 0-1.273m16.83 0a.9.9 0 0 1 0 1.273l-1.415 1.414A.9.9 0 0 1 17.725 5l1.414-1.414a.9.9 0 0 1 1.273 0M.097 12a.9.9 0 0 1 .9-.9h2a.9.9 0 0 1 0 1.8h-2a.9.9 0 0 1-.9-.9m20 0a.9.9 0 0 1 .9-.9h2a.9.9 0 0 1 0 1.8h-2a.9.9 0 0 1-.9-.9M6.27 17.727a.9.9 0 0 1 0 1.273l-1.414 1.414a.9.9 0 1 1-1.273-1.273l1.414-1.414a.9.9 0 0 1 1.273 0m11.455 0a.9.9 0 0 1 1.273 0l1.414 1.414a.9.9 0 1 1-1.273 1.273L17.725 19a.9.9 0 0 1 0-1.273M11.998 20.1a.9.9 0 0 1 .9.9v2a.9.9 0 0 1-1.8 0v-2a.9.9 0 0 1 .9-.9"></path>
                     </svg>
                 </button>
-                <button id="open-about" class="ghost-button">关于</button>
+                <button id="lang-toggle" class="ghost-button" aria-label="切换语言">EN</button>
+                <button id="open-about" class="ghost-button" id="about-button">关于</button>
             </div>
         </header>
 
         <main class="app-main">
             <section class="panel panel-left" aria-label="颜色选择">
-                <h1 class="panel-title">选择颜色</h1>
-                <p class="panel-subtitle">最多 5 个颜色，用于匹配宝可梦主色调。</p>
+                <h1 class="panel-title" id="title-select-colors">选择颜色</h1>
+                <p class="panel-subtitle" id="subtitle-select-colors">最多 5 个颜色，用于匹配宝可梦主色调。</p>
 
                 <div id="color-inputs" class="color-inputs"></div>
 
@@ -49,47 +50,47 @@
 
                 <div class="match-options">
                     <label class="field">
-                        <span class="field-label">匹配方式</span>
+                        <span class="field-label" id="label-match-mode">匹配方式</span>
                         <select id="match-mode" class="select">
-                            <option value="closest">最近颜色优先</option>
-                            <option value="average">与平均色接近</option>
-                            <option value="any">任一颜色匹配</option>
+                            <option value="closest" id="option-match-closest">最近颜色优先</option>
+                            <option value="average" id="option-match-average">与平均色接近</option>
+                            <option value="any" id="option-match-any">任一颜色匹配</option>
                         </select>
                     </label>
                     <label class="field">
-                        <span class="field-label">结果数量上限</span>
+                        <span class="field-label" id="label-result-limit">结果数量上限</span>
                         <input id="result-limit" type="number" min="1" max="200" value="60" class="input" />
                     </label>
                 </div>
 
                 <div class="field-group">
                     <label class="field">
-                        <span class="field-label">颜色严格度（数值越大越严格）</span>
+                        <span class="field-label" id="label-strictness">颜色严格度（数值越大越严格）</span>
                         <input id="strictness" type="range" min="0" max="100" value="60" class="range" />
                     </label>
                 </div>
 
                 <section class="panel-subsection" aria-label="筛选条件">
-                    <h2 class="subsection-title">筛选条件</h2>
+                    <h2 class="subsection-title" id="title-filters">筛选条件</h2>
 
                     <div class="field-group">
                         <label class="field">
-                            <span class="field-label">属性（可多选）</span>
+                            <span class="field-label" id="label-types">属性（可多选）</span>
                             <div id="filter-types" class="tag-multi-select"></div>
                         </label>
                     </div>
 
                     <div class="field-group field-inline">
                         <label class="field field-inline-item">
-                            <span class="field-label">世代</span>
+                            <span class="field-label" id="label-generation">世代</span>
                             <select id="filter-generation" class="select">
-                                <option value="">不限</option>
+                                <option value="" id="option-generation-any">不限</option>
                             </select>
                         </label>
                         <label class="field field-inline-item">
-                            <span class="field-label">体型（shape）</span>
+                            <span class="field-label" id="label-shape">体型（shape）</span>
                             <select id="filter-shape" class="select">
-                                <option value="">不限</option>
+                                <option value="" id="option-shape-any">不限</option>
                             </select>
                         </label>
                     </div>
@@ -97,11 +98,11 @@
                     <div class="field-group field-inline field-inline-flags">
                         <label class="checkbox">
                             <input type="checkbox" id="filter-mega" />
-                            <span>只看超级进化 (Mega)</span>
+                            <span id="label-mega-only">只看超级进化 (Mega)</span>
                         </label>
                         <label class="checkbox">
                             <input type="checkbox" id="filter-gmax" />
-                            <span>只看超极巨化 (G-Max)</span>
+                            <span id="label-gmax-only">只看超极巨化 (G-Max)</span>
                         </label>
                     </div>
                 </section>
@@ -112,7 +113,7 @@
 
             <section class="panel panel-right" aria-label="宝可梦结果列表">
                 <div class="results-header">
-                    <h2 class="panel-title">匹配结果</h2>
+                    <h2 class="panel-title" id="title-results">匹配结果</h2>
                     <div id="active-filters" class="active-filters"></div>
                 </div>
                 <div id="results" class="results-grid" aria-live="polite"></div>
@@ -125,17 +126,17 @@
         <div class="modal-backdrop" data-dismiss="about-modal"></div>
         <div class="modal-dialog" role="document">
             <header class="modal-header">
-                <h2 class="modal-title">关于 Pokémon Finder</h2>
-                <button class="icon-button" data-dismiss="about-modal" aria-label="关闭">×</button>
+                <h2 class="modal-title" id="about-title">关于 Pokémon Finder</h2>
+                <button class="icon-button" data-dismiss="about-modal" aria-label="关闭" id="about-close-icon">×</button>
             </header>
             <div class="modal-body">
-                <p>Pokémon Finder 是一个支持“凭外貌找名字”和“凭名字看外貌”的宝可梦检索工具。</p>
-                <p>你可以：在左侧选择最多 5 个颜色，并结合属性、世代、体型等筛选条件，找到配色和形象最接近的一批宝可梦；也可以在顶部输入名称 / 拼音，快速定位某只宝可梦并查看它的主色与外观。</p>
-                <p>前端为纯静态页面，不依赖任何后端服务，所有计算在浏览器本地完成。宝可梦基础数据基于社区开源数据整理与增强，仅用于学习与交流。</p>
-                <p class="about-author">作者 @ZTMYO</p>
+                <p id="about-text-1">Pokémon Finder 是一个支持“凭外貌找名字”和“凭名字看外貌”的宝可梦检索工具。</p>
+                <p id="about-text-2">你可以：在左侧选择最多 5 个颜色，并结合属性、世代、体型等筛选条件，找到配色和形象最接近的一批宝可梦；也可以在顶部输入名称 / 拼音，快速定位某只宝可梦并查看它的主色与外观。</p>
+                <p id="about-text-3">前端为纯静态页面，不依赖任何后端服务，所有计算在浏览器本地完成。宝可梦基础数据基于社区开源数据整理与增强，仅用于学习与交流。</p>
+                <p class="about-author" id="about-author">作者 @ZTMYO</p>
             </div>
             <footer class="modal-footer">
-                <button class="primary-button" data-dismiss="about-modal">关闭</button>
+                <button class="primary-button" data-dismiss="about-modal" id="about-close">关闭</button>
             </footer>
         </div>
     </div>
