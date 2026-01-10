@@ -888,10 +888,10 @@
         "is_mega": false,
         "is_gmax": false,
         "colors": [
-            "#B68277",
-            "#473330",
+            "#ECA9BB",
+            "#4D4B4C",
             "#F9DC7D",
-            "#EFDBE0",
+            "#C96486",
             "#F7DFA0"
         ],
         "image": "0025.1-换装皮卡丘.png"
@@ -7515,11 +7515,11 @@
         "is_mega": false,
         "is_gmax": false,
         "colors": [
-            "#74472A",
+            "#90969B",
             "#965B34",
             "#40322F",
-            "#CAD0CA",
-            "#ACADA0"
+            "#B5342F",
+            "#F9D87B"
         ],
         "image": "0244-炎帝.png"
     },
@@ -29969,9 +29969,9 @@
         "is_mega": false,
         "is_gmax": false,
         "colors": [
-            "#64432B",
-            "#DAC04B",
-            "#9E7B40",
+            "#9C5C26",
+            "#E7CF3F",
+            "#AF2C28",
             "#5C765F",
             "#868B95"
         ],
@@ -29995,8 +29995,8 @@
         "colors": [
             "#ECCE3A",
             "#75719C",
-            "#ACA9BF",
-            "#EDE9E7",
+            "#ECCD2A",
+            "#DC4629",
             "#42351D"
         ],
         "image": "1021-猛雷鼓.png"
@@ -30018,10 +30018,10 @@
         "is_gmax": false,
         "colors": [
             "#F8BC54",
-            "#ACA9A5",
-            "#423A36",
+            "#FFE48C",
+            "#A6A3A4",
             "#292725",
-            "#716F6C"
+            "#C7C7C5"
         ],
         "image": "1022-铁磐岩.png"
     },
