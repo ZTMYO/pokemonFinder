@@ -430,6 +430,27 @@ function getShapeDisplayName(shapeZh) {
     return shapeZh;
 }
 
+// 结果卡片：点击跳转到 52poke 百科对应条目（使用中文名作为词条名）
+function attachWikiLink(card, p) {
+    if (!card || !p) return;
+
+    const zhName = typeof p.name === "string" && p.name.trim()
+        ? p.name.trim()
+        : typeof p.name_en === "string"
+        ? p.name_en.trim()
+        : "";
+    if (!zhName) return;
+
+    card.style.cursor = "pointer";
+    card.addEventListener("click", () => {
+        try {
+            const encoded = encodeURIComponent(zhName);
+            const url = `https://wiki.52poke.com/wiki/${encoded}`;
+            window.open(url, "_blank", "noopener");
+        } catch (e) {}
+    });
+}
+
 // 根据当前语言创建一张宝可梦结果卡片（不改变结果集合，只负责展示）
 function createResultCard(p) {
     const card = document.createElement("article");
@@ -529,6 +550,8 @@ function createResultCard(p) {
     card.appendChild(imgWrap);
     card.appendChild(tags);
     card.appendChild(colorBar);
+
+    attachWikiLink(card, p);
 
     return card;
 }
@@ -1000,107 +1023,7 @@ function renderResults(list, queryColors, mode) {
     }
 
     for (const p of finalList) {
-        const card = document.createElement("article");
-        card.className = "card";
-
-        const header = document.createElement("div");
-        header.className = "card-header";
-
-        const nameEl = document.createElement("div");
-        nameEl.className = "card-name";
-        nameEl.textContent =
-            currentLang === "zh"
-                ? p.name || p.name_en || "?"
-                : p.name_en || p.name || "?";
-
-        const indexEl = document.createElement("div");
-        indexEl.className = "card-index";
-        indexEl.textContent = p.index || "";
-
-        header.appendChild(nameEl);
-        header.appendChild(indexEl);
-
-        const imgWrap = document.createElement("div");
-        imgWrap.className = "card-img-wrap";
-        const img = document.createElement("img");
-        img.src = p.image_url || p.image || "";
-        img.alt =
-            currentLang === "zh"
-                ? p.name || p.name_en || ""
-                : p.name_en || p.name || "";
-        img.loading = "lazy";
-        imgWrap.appendChild(img);
-
-        const tags = document.createElement("div");
-        tags.className = "card-tags";
-
-        if (p.types && p.types.length) {
-            for (const t of p.types) {
-                const tag = document.createElement("span");
-                tag.className = "tag";
-                tag.textContent = getTypeDisplayName(t);
-
-                const c = TYPE_COLORS[t];
-                if (c) {
-                    tag.style.backgroundColor = c;
-                    tag.style.color = "#ffffff";
-                    tag.style.borderColor = c;
-                }
-
-                tags.appendChild(tag);
-            }
-        }
-
-        if (p.generation) {
-            const tag = document.createElement("span");
-            tag.className = "tag tag-weak";
-            tag.textContent = getGenerationDisplayName(p.generation);
-            tags.appendChild(tag);
-        }
-
-        if (p.shape) {
-            const tag = document.createElement("span");
-            tag.className = "tag tag-weak";
-            tag.textContent = getShapeDisplayName(p.shape);
-            tags.appendChild(tag);
-        }
-
-        if (p.is_mega) {
-            const tag = document.createElement("span");
-            tag.className = "tag";
-            tag.textContent = "Mega";
-            tags.appendChild(tag);
-        }
-
-        if (p.is_gmax) {
-            const tag = document.createElement("span");
-            tag.className = "tag";
-            tag.textContent = "G-Max";
-            tags.appendChild(tag);
-        }
-
-        const colorBar = document.createElement("div");
-        colorBar.className = "card-color-bar";
-
-        if (Array.isArray(p.colors) && p.colors.length) {
-            const validColors = p.colors
-                .map((h) => (typeof h === "string" ? h.trim() : ""))
-                .filter((h) => /^#?[0-9a-fA-F]{6}$/.test(h))
-                .map((h) => (h.startsWith("#") ? h : "#" + h));
-
-            for (const c of validColors) {
-                const seg = document.createElement("div");
-                seg.className = "card-color-segment";
-                seg.style.backgroundColor = c;
-                colorBar.appendChild(seg);
-            }
-        }
-
-        card.appendChild(header);
-        card.appendChild(imgWrap);
-        card.appendChild(tags);
-        card.appendChild(colorBar);
-
+        const card = createResultCard(p);
         resultsContainer.appendChild(card);
     }
 }
@@ -1234,6 +1157,8 @@ function showPokemonAsSingleResult(p, labelOverride, queryLabel) {
     card.appendChild(imgWrap);
     card.appendChild(tags);
     card.appendChild(colorBar);
+
+    attachWikiLink(card, p);
 
     resultsContainer.appendChild(card);
 }
