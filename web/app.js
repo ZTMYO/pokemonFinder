@@ -1,8 +1,10 @@
 // 数据文件路径（由后端脚本预先生成）
 const DATA_URL = "pokemon_data.json";
+const WIKI_URLS_URL = "wiki_urls.json";
 
 let allPokemon = [];
 let filteredPokemon = [];
+let wikiUrls = {};
 
 const colorInputsContainer = document.getElementById("color-inputs");
 const addColorBtn = document.getElementById("add-color");
@@ -430,24 +432,28 @@ function getShapeDisplayName(shapeZh) {
     return shapeZh;
 }
 
-// 结果卡片：点击跳转到 52poke 百科对应条目（使用中文名作为词条名）
+// 结果卡片：点击跳转到 52poke 百科对应条目
 function attachWikiLink(card, p) {
     if (!card || !p) return;
 
-    const zhName = typeof p.name === "string" && p.name.trim()
-        ? p.name.trim()
-        : typeof p.name_en === "string"
-        ? p.name_en.trim()
-        : "";
-    if (!zhName) return;
+    // 确定用于搜索的名称（优先中文名，然后是英文名）
+    const nameToLink = p.name || p.name_en || "";
+    if (!nameToLink) return;
 
     card.style.cursor = "pointer";
     card.addEventListener("click", () => {
         try {
-            const encoded = encodeURIComponent(zhName);
+            // 优先使用从 wiki 页面提取的映射关系
+            // 如果 wikiUrls 中存在该名称（或去除括号后的名称），则使用映射的 URL 后缀
+            const cleanName = nameToLink.replace(/（.*）/g, "").trim();
+            const wikiSuffix = wikiUrls[nameToLink] || wikiUrls[cleanName] || nameToLink;
+            
+            const encoded = encodeURIComponent(wikiSuffix);
             const url = `https://wiki.52poke.com/wiki/${encoded}`;
             window.open(url, "_blank", "noopener");
-        } catch (e) {}
+        } catch (e) {
+            console.error("Wiki link error:", e);
+        }
     });
 }
 
@@ -1709,11 +1715,20 @@ if (searchInput) {
 
 async function loadData() {
     try {
-        const res = await fetch(DATA_URL);
-        if (!res.ok) {
+        // 并行加载宝可梦数据和 Wiki 映射数据
+        const [pokemonRes, wikiRes] = await Promise.all([
+            fetch(DATA_URL),
+            fetch(WIKI_URLS_URL).catch(() => null) // 如果 Wiki 数据加载失败，不影响主流程
+        ]);
+
+        if (!pokemonRes.ok) {
             throw new Error("无法加载宝可梦数据，请确认 pokemon_data.json 是否存在");
         }
-        const data = await res.json();
+        
+        const data = await pokemonRes.json();
+        if (wikiRes && wikiRes.ok) {
+            wikiUrls = await wikiRes.json();
+        }
 
         allPokemon = data.map((p) => ({
             index: p.index,
