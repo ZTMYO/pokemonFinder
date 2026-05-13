@@ -18,6 +18,11 @@ const resultsContainer = document.getElementById("results");
 const searchInput = document.getElementById("search-input");
 const searchSuggestions = document.getElementById("search-suggestions");
 const activeFiltersEl = document.getElementById("active-filters");
+const imageUploadInput = document.getElementById("image-upload");
+const labelUploadImage = document.getElementById("label-upload-image");
+const clearUploadBtn = document.getElementById("clear-upload");
+const uploadPreviewContainer = document.getElementById("upload-preview-container");
+const uploadPreviewImg = document.getElementById("upload-preview");
 
 const aboutModal = document.getElementById("about-modal");
 const openAboutBtn = document.getElementById("open-about");
@@ -41,6 +46,10 @@ const optionShapeAny = document.getElementById("option-shape-any");
 const labelMegaOnly = document.getElementById("label-mega-only");
 const labelGmaxOnly = document.getElementById("label-gmax-only");
 const titleResults = document.getElementById("title-results");
+
+const titleImageExtraction = document.getElementById("title-image-extraction");
+const subtitleImageExtraction = document.getElementById("subtitle-image-extraction");
+const btnClearUpload = document.getElementById("clear-upload");
 
 const aboutTitle = document.getElementById("about-title");
 const aboutText1 = document.getElementById("about-text-1");
@@ -84,7 +93,10 @@ const I18N = {
         label_gmax_only: "只看超极巨化 (G-Max)",
         title_results: "匹配结果",
         btn_add_color: "添加颜色",
+        btn_upload_image: "上传图片",
         btn_clear_colors: "清空",
+        title_image_extraction: "图片提取",
+        subtitle_image_extraction: "上传图片或直接使用 Ctrl + V 粘贴图片进行提取。",
         btn_run_search: "开始匹配",
         btn_reset_all: "重置",
         btn_about: "关于",
@@ -117,9 +129,12 @@ const I18N = {
         label_mega_only: "Only Mega evolutions",
         label_gmax_only: "Only G-Max",
         title_results: "Results",
-        btn_add_color: "Add color",
+        btn_add_color: "Add Color",
+        btn_upload_image: "Upload Image",
         btn_clear_colors: "Clear",
-        btn_run_search: "Run match",
+        title_image_extraction: "Image Extraction",
+        subtitle_image_extraction: "Upload an image or press Ctrl + V to paste an image for extraction.",
+        btn_run_search: "Run Match",
         btn_reset_all: "Reset",
         btn_about: "About",
         about_title: "About Pokémon Finder",
@@ -199,8 +214,22 @@ function applyTranslations() {
     if (labelGmaxOnly && dict.label_gmax_only) {
         labelGmaxOnly.textContent = dict.label_gmax_only;
     }
+    if (labelUploadImage && dict.btn_upload_image) {
+        const input = labelUploadImage.querySelector("input");
+        labelUploadImage.textContent = dict.btn_upload_image;
+        if (input) labelUploadImage.appendChild(input);
+    }
     if (titleResults && dict.title_results) {
         titleResults.textContent = dict.title_results;
+    }
+    if (titleImageExtraction && dict.title_image_extraction) {
+        titleImageExtraction.textContent = dict.title_image_extraction;
+    }
+    if (subtitleImageExtraction && dict.subtitle_image_extraction) {
+        subtitleImageExtraction.textContent = dict.subtitle_image_extraction;
+    }
+    if (btnClearUpload && dict.btn_clear_colors) {
+        btnClearUpload.textContent = dict.btn_clear_colors;
     }
 
     // 更新世代下拉选项的显示文本（保持值为中文，文本根据语言切换）
@@ -347,7 +376,7 @@ function runSearch() {
 
     const colors = collectSelectedColors();
     if (!colors.length) {
-        showToast("请至少选择 1 个颜色");
+        // showToast("请至少选择 1 个颜色");
         return;
     }
     const filters = getCurrentFilters();
@@ -739,10 +768,62 @@ function hexToRgb(hex) {
 }
 
 function colorDistanceSq(rgb1, rgb2) {
-    const dr = rgb1[0] - rgb2[0];
-    const dg = rgb1[1] - rgb2[1];
-    const db = rgb1[2] - rgb2[2];
-    return dr * dr + dg * dg + db * db;
+    const r1 = rgb1[0], g1 = rgb1[1], b1 = rgb1[2];
+    const r2 = rgb2[0], g2 = rgb2[1], b2 = rgb2[2];
+    
+    // 1. 基础感知距离 (Redmean)
+    const rmean = (r1 + r2) / 2;
+    const dr = r1 - r2;
+    const dg = g1 - g2;
+    const db = b1 - b2;
+    const baseDist = (((512 + rmean) * dr * dr) >> 8) + 4 * dg * dg + (((767 - rmean) * db * db) >> 8);
+
+    // 2. 饱和度和亮度处理
+    const max1 = Math.max(r1, g1, b1), min1 = Math.min(r1, g1, b1);
+    const max2 = Math.max(r2, g2, b2), min2 = Math.min(r2, g2, b2);
+    const sat1 = max1 - min1;
+    const sat2 = max2 - min2;
+    const lum1 = (r1 * 299 + g1 * 587 + b1 * 114) / 1000;
+    const lum2 = (r2 * 299 + g2 * 587 + b2 * 114) / 1000;
+
+    // 饱和度差异惩罚 - 加大权重，确保“鲜艳”和“平淡”不混淆
+    const dsat = Math.abs(sat1 - sat2);
+    const satPenalty = dsat * dsat * 6;
+
+    // 亮度差异惩罚 - 确保“深色”和“浅色”不混淆
+    const dlum = Math.abs(lum1 - lum2);
+    const lumPenalty = dlum * dlum * 8;
+
+    // 3. 色相差异惩罚 (Hue Mismatch)
+    let huePenalty = 0;
+    const isGrey1 = sat1 < 18;
+    const isGrey2 = sat2 < 18;
+
+    if (!isGrey1 && !isGrey2) {
+        const h1 = getHue(r1, g1, b1, max1, min1);
+        const h2 = getHue(r2, g2, b2, max2, min2);
+        let dh = Math.abs(h1 - h2);
+        if (dh > 180) dh = 360 - dh;
+
+        // 极大加强色相权重。
+        huePenalty = dh * dh * 50;
+    } else if (isGrey1 !== isGrey2) {
+        // 一个是鲜艳色，一个是灰色，给予巨额惩罚
+        const vibrantSat = isGrey1 ? sat2 : sat1;
+        huePenalty = 20000 + vibrantSat * 100; 
+    }
+
+    return baseDist + satPenalty + lumPenalty + huePenalty;
+}
+
+function getHue(r, g, b, max, min) {
+    if (max === min) return 0;
+    let h;
+    const d = max - min;
+    if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    return h * 60;
 }
 
 function averageRgb(colors) {
@@ -790,7 +871,7 @@ function createColorRow(initialHex = "#000000") {
             hexInput.value = v.toUpperCase();
             colorInput.value = v;
         } else {
-            showToast("请输入有效的十六进制颜色，例如 #88CC88");
+            // showToast("请输入有效的十六进制颜色，例如 #88CC88");
             hexInput.value = colorInput.value.toUpperCase();
         }
     }
@@ -825,7 +906,7 @@ function ensureAtLeastOneColorRow() {
 
 addColorBtn.addEventListener("click", () => {
     if (colorInputsContainer.children.length >= 5) {
-        showToast("最多只能添加 5 个颜色");
+        // showToast("最多只能添加 5 个颜色");
         return;
     }
     colorInputsContainer.appendChild(createColorRow());
@@ -862,74 +943,103 @@ function computeColorScore(pokeColorsHex, queryColors, mode) {
 
     if (!pokeRgbList.length) return Infinity;
 
+    // 1. 预处理查询颜色：计算饱和度、色相分类和权重
+    const queryColorsData = queryColors.map(qc => {
+        const r = qc.rgb[0], g = qc.rgb[1], b = qc.rgb[2];
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        const sat = max - min;
+        const weight = 1.0 + (sat / 255) * 4.0; // 进一步拉大饱和度权重
+        const hue = getHue(r, g, b, max, min);
+        const isGrey = sat < 20;
+        // 将色相分为 12 个区间，用于覆盖率检查
+        const hueBin = isGrey ? -1 : Math.floor(hue / 30);
+        return { ...qc, weight, sat, hue, hueBin, isGrey };
+    });
+
+    // 2. 预处理宝可梦颜色
+    const pokeColorsData = pokeRgbList.map(pc => {
+        const r = pc[0], g = pc[1], b = pc[2];
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        const sat = max - min;
+        const hue = getHue(r, g, b, max, min);
+        const isGrey = sat < 20;
+        const hueBin = isGrey ? -1 : Math.floor(hue / 30);
+        return { rgb: pc, sat, hue, hueBin, isGrey };
+    });
+
     if (mode === "average") {
         const qAvg = averageRgb(queryColors.map((c) => c.rgb));
         const pAvg = averageRgb(pokeRgbList);
         return colorDistanceSq(qAvg, pAvg);
     }
 
-    const isSingleColorQuery = queryColors.length === 1;
-
-    if (mode === "closest" && isSingleColorQuery) {
-        const qAvg = queryColors[0].rgb;
-        const pAvg = averageRgb(pokeRgbList);
-        return colorDistanceSq(qAvg, pAvg);
-    }
-
     if (mode === "any") {
         let best = Infinity;
-        for (const qc of queryColors) {
-            for (const pc of pokeRgbList) {
-                const d = colorDistanceSq(qc.rgb, pc);
+        for (const qc of queryColorsData) {
+            for (const pc of pokeColorsData) {
+                const d = colorDistanceSq(qc.rgb, pc.rgb) / qc.weight;
                 if (d < best) best = d;
             }
         }
         return best;
     }
 
-    // 默认（最近颜色优先，严格模式）：
-    // 对每一个查询颜色，在宝可梦主色中找到最近的一块，且这块颜色必须足够接近；
-    // 如果有任意一个查询颜色找不到足够接近的主色，则认为这只宝可梦与该组合不匹配。
+    // 默认模式：综合匹配评分
+    let totalForwardDist = 0;
+    const matchedPokeIndices = new Set();
+    const coveredHueBins = new Set();
 
-    // 阈值说明：这是 RGB 欧氏距离平方的阈值。
-    // 比如纯红(255,0,0) 和 纯绿(0,255,0) 的距离平方大约是 130000，远大于该阈值，
-    // 会被判定为“不匹配该颜色”。
-    // 严格度由滑动条控制：0 非常宽松，100 非常严格
-    let strictValue = 60;
-    if (strictnessRange) {
-        const v = Number(strictnessRange.value);
-        if (!Number.isNaN(v)) strictValue = Math.min(100, Math.max(0, v));
-    }
-    // 将 0-100 映射到一个合理的距离平方区间：宽松时阈值大，严格时阈值小
-    const MAX_PER_COLOR_DIST = 40000 - (strictValue / 100) * 25000; // 约 40000 ~ 15000
-
-    let total = 0;
-    const remainingPokeColors = [...pokeRgbList];
-
-    for (const qc of queryColors) {
-        let bestIdx = -1;
+    // 正向匹配：每一个查询颜色都要在宝可梦身上找到“归宿”
+    for (const qc of queryColorsData) {
         let bestDist = Infinity;
+        let bestIdx = -1;
 
-        for (let i = 0; i < remainingPokeColors.length; i++) {
-            const pc = remainingPokeColors[i];
-            const d = colorDistanceSq(qc.rgb, pc);
+        for (let i = 0; i < pokeColorsData.length; i++) {
+            const pc = pokeColorsData[i];
+            const d = colorDistanceSq(qc.rgb, pc.rgb);
             if (d < bestDist) {
                 bestDist = d;
                 bestIdx = i;
             }
         }
 
-        // 没有可用主色，或者最近的那块颜色也太远 —— 直接视为整体不匹配
-        if (bestIdx === -1 || bestDist > MAX_PER_COLOR_DIST) {
-            return Infinity;
+        if (bestIdx !== -1) {
+            totalForwardDist += bestDist * qc.weight;
+            matchedPokeIndices.add(bestIdx);
+            if (!qc.isGrey) coveredHueBins.add(qc.hueBin);
         }
-
-        total += bestDist;
-        // 占用这块颜色，后续查询颜色不能再复用
-        remainingPokeColors.splice(bestIdx, 1);
     }
 
-    return total;
+    // 色相覆盖率惩罚：如果查询里有红、黄、紫，宝可梦必须也都有
+    let coveragePenalty = 0;
+    const requiredHueBins = new Set(queryColorsData.filter(qc => !qc.isGrey).map(qc => qc.hueBin));
+    for (const bin of requiredHueBins) {
+        if (!pokeColorsData.some(pc => !pc.isGrey && pc.hueBin === bin)) {
+            // 缺失一个色系，给予巨额惩罚
+            coveragePenalty += 50000;
+        }
+    }
+
+    // 反向匹配惩罚：宝可梦多出来的颜色
+    let reversePenalty = 0;
+    for (let i = 0; i < pokeColorsData.length; i++) {
+        if (matchedPokeIndices.has(i)) continue;
+
+        const pc = pokeColorsData[i];
+        let minQueryDist = Infinity;
+        for (const qc of queryColorsData) {
+            const d = colorDistanceSq(qc.rgb, pc.rgb);
+            if (d < minQueryDist) minQueryDist = d;
+        }
+        
+        if (minQueryDist !== Infinity) {
+            // 宝可梦多出来的颜色如果是鲜艳的，且不在查询的色系中，惩罚更重
+            const pWeight = 1.0 + (pc.sat / 255) * 3.0;
+            reversePenalty += minQueryDist * 1.5 * pWeight;
+        }
+    }
+
+    return totalForwardDist + reversePenalty + coveragePenalty;
 }
 
 function getActiveFilterSummary(filters) {
@@ -1558,7 +1668,7 @@ function initFiltersUI() {
                     ".tag-option.selected",
                 ).length;
                 if (selectedCount >= 2) {
-                    showToast("属性最多只能选择 2 个");
+                    // showToast("属性最多只能选择 2 个");
                     return;
                 }
 
@@ -1630,11 +1740,315 @@ if (runSearchBtn) {
     runSearchBtn.addEventListener("click", runSearch);
 }
 
+// 图片上传提取颜色
+if (imageUploadInput) {
+    imageUploadInput.addEventListener("change", handleImageUpload);
+}
+
+// 粘贴图片功能
+document.addEventListener("paste", async (e) => {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+        if (item.type.indexOf("image") !== -1) {
+            const file = item.getAsFile();
+            if (file) {
+                // 构造一个类似 event 的对象传给 handleImageUpload
+                const mockEvent = { target: { files: [file], value: "" } };
+                handleImageUpload(mockEvent);
+            }
+        }
+    }
+});
+
+if (clearUploadBtn) {
+    clearUploadBtn.addEventListener("click", () => {
+        if (uploadPreviewContainer) uploadPreviewContainer.style.display = "none";
+        if (uploadPreviewImg) uploadPreviewImg.src = "";
+        colorInputsContainer.innerHTML = "";
+        // 清空后触发一次搜索（即清空结果）
+        runSearch();
+    });
+}
+
+/**
+ * 处理图片上传并提取颜色
+ * 引入“共识投票”机制：多次提取颜色并交叉比对结果，排除随机波动带来的干扰项
+ */
+async function handleImageUpload(e) {
+    const file = (e.target && e.target.files) ? e.target.files[0] : null;
+    if (!file) return;
+
+    try {
+        // 显示预览图
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            if (uploadPreviewImg && uploadPreviewContainer) {
+                uploadPreviewImg.src = event.target.result;
+                uploadPreviewContainer.style.display = "flex";
+            }
+        };
+        reader.readAsDataURL(file);
+
+        // --- 多轮投票逻辑开始 ---
+        const ITERATIONS = 10; // 执行 10 轮提取和评分
+        const allIterationResults = [];
+        const filters = getCurrentFilters();
+        const baseFilteredPokemon = applyFiltersToData(filters);
+        
+        if (baseFilteredPokemon.length === 0) return;
+
+        // 1. 模拟多次提取和搜索
+        for (let i = 0; i < ITERATIONS; i++) {
+            const hexColors = await extractColorsFromImage(file);
+            const queryColors = hexColors.map(h => ({ hex: h, rgb: hexToRgb(h) }));
+            
+            // 计算当前色组下的所有评分
+            const scored = baseFilteredPokemon.map(p => ({
+                p,
+                score: computeColorScore(p.colors, queryColors, matchModeSelect.value)
+            })).sort((a, b) => a.score - b.score);
+            
+            // 记录本轮前 60 名
+            allIterationResults.push({
+                colors: hexColors,
+                topList: scored.slice(0, 60)
+            });
+        }
+
+        // 2. 统计共识：计算每个宝可梦出现的频率和平均分
+        const consensusMap = new Map(); // pokemonIndex -> { count, totalScore, pokemon }
+        
+        allIterationResults.forEach(res => {
+            res.topList.forEach((item, rank) => {
+                const idx = item.p.index;
+                if (!consensusMap.has(idx)) {
+                    consensusMap.set(idx, { count: 0, totalScore: 0, pokemon: item.p });
+                }
+                const data = consensusMap.get(idx);
+                data.count++;
+                data.totalScore += item.score;
+            });
+        });
+
+        // 3. 筛选并重新排序
+        // 只有在超过半数轮次（>=3轮）中都出现在前列的宝可梦才被认为是“稳定结果”
+        const MIN_CONSENSUS = Math.ceil(ITERATIONS / 2);
+        const finalScoredList = [];
+        
+        consensusMap.forEach((data, idx) => {
+            if (data.count >= MIN_CONSENSUS) {
+                const avgScore = data.totalScore / data.count;
+                // 频率越高，权重越优（分值越小）
+                // 满勤 (5/5) 保持原分，3/5 则分值大幅增加（排名下降）
+                const frequencyPenalty = 1.0 + (ITERATIONS - data.count) * 0.5;
+                finalScoredList.push({
+                    p: data.pokemon,
+                    finalScore: avgScore * frequencyPenalty
+                });
+            }
+        });
+
+        finalScoredList.sort((a, b) => a.finalScore - b.finalScore);
+
+        // 4. 选择表现最好的一组颜色填充到 UI
+        // 找出哪一轮的 top 1 刚好也是最终结果的 top 1
+        const absoluteWinner = finalScoredList[0]?.p;
+        let bestColorSet = allIterationResults[0].colors;
+        if (absoluteWinner) {
+            const matchingIteration = allIterationResults.find(res => res.topList[0].p.index === absoluteWinner.index);
+            if (matchingIteration) bestColorSet = matchingIteration.colors;
+        }
+
+        // 5. 更新 UI
+        colorInputsContainer.innerHTML = "";
+        bestColorSet.forEach(hex => {
+            colorInputsContainer.appendChild(createColorRow(hex));
+        });
+
+        activeFiltersEl.textContent = getActiveFilterSummary(filters);
+        // 直接渲染最终投票结果
+        renderResultsManual(finalScoredList.map(item => item.p));
+        // --- 多轮投票逻辑结束 ---
+
+    } catch (err) {
+        console.error(err);
+    } finally {
+        if (e.target && e.target.value !== undefined) e.target.value = "";
+    }
+}
+
+/**
+ * 辅助函数：手动渲染一组已排序的宝可梦
+ */
+function renderResultsManual(pokemonList) {
+    resultsContainer.innerHTML = "";
+    if (pokemonList.length === 0) {
+        const empty = document.createElement("div");
+        empty.style.gridColumn = "1 / -1";
+        empty.style.textAlign = "center";
+        empty.style.padding = "40px";
+        empty.style.color = "#666";
+        empty.style.fontSize = "13px";
+        empty.textContent = currentLang === "zh" ? "没有找到高度匹配的宝可梦，请尝试重新粘贴或手动调整颜色。" : "No stable matches found. Try pasting again or adjusting colors manually.";
+        resultsContainer.appendChild(empty);
+        return;
+    }
+    pokemonList.forEach(p => {
+        resultsContainer.appendChild(createResultCard(p));
+    });
+}
+
+/**
+ * 从图片中提取主要颜色 (前端实现 K-Means)
+ * 增加饱和度权重以优先提取鲜艳颜色
+ */
+function extractColorsFromImage(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = () => {
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d");
+                
+                // 缩放图片以提高处理速度
+                const maxDim = 150;
+                let w = img.width, h = img.height;
+                if (w > h) {
+                    if (w > maxDim) { h *= maxDim / w; w = maxDim; }
+                } else {
+                    if (h > maxDim) { w *= maxDim / h; h = maxDim; }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                ctx.drawImage(img, 0, 0, w, h);
+                
+                const imageData = ctx.getImageData(0, 0, w, h).data;
+                const pixels = [];
+                for (let i = 0; i < imageData.length; i += 4) {
+                    const r = imageData[i], g = imageData[i+1], b = imageData[i+2], a = imageData[i+3];
+                    // 只提取不透明像素
+                    if (a > 128) {
+                        // 过滤掉极其接近白色或黑色的像素（通常是背景或线条）
+                        const isTooLight = r > 245 && g > 245 && b > 245;
+                        const isTooDark = r < 10 && g < 10 && b < 10;
+                        if (!isTooLight && !isTooDark) {
+                            pixels.push([r, g, b]);
+                        }
+                    }
+                }
+                
+                if (pixels.length === 0) {
+                    resolve([]);
+                    return;
+                }
+                
+                // 执行 K-Means 聚类 (k=5)
+                const k = 5;
+                const result = simpleKMeans(pixels, k);
+                
+                // 转换为 HEX 格式
+                const hexColors = result.map(rgb => {
+                    const r = Math.round(rgb[0]).toString(16).padStart(2, '0');
+                    const g = Math.round(rgb[1]).toString(16).padStart(2, '0');
+                    const b = Math.round(rgb[2]).toString(16).padStart(2, '0');
+                    return `#${r}${g}${b}`.toUpperCase();
+                });
+                
+                resolve(hexColors);
+            };
+            img.onerror = reject;
+            img.src = event.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+}
+
+/**
+ * 基础 K-Means 聚类实现
+ * 优化：增加饱和度权重，使高饱和像素在聚类时具有更大的影响力
+ */
+function simpleKMeans(pixels, k, iterations = 10) {
+    // 辅助函数：计算饱和度
+    function getSaturation(r, g, b) {
+        const max = Math.max(r, g, b) / 255;
+        const min = Math.min(r, g, b) / 255;
+        if (max === min) return 0;
+        const l = (max + min) / 2;
+        return l > 0.5 ? (max - min) / (2 - max - min) : (max - min) / (max + min);
+    }
+
+    // 预计算每个像素的权重 (1 + 饱和度 * 5)
+    // 饱和度越高，权重越大，越容易拉动聚类中心
+    const pixelWeights = pixels.map(p => 1 + getSaturation(p[0], p[1], p[2]) * 5);
+
+    let centers = [];
+    // 启发式初始化：优先选择高饱和度的点作为初始中心
+    const sortedBySat = pixels
+        .map((p, i) => ({ p, s: pixelWeights[i], i }))
+        .sort((a, b) => b.s - a.s);
+    
+    // 从前 20% 的高饱和度点中随机选 k 个作为中心
+    const topCount = Math.max(k, Math.floor(sortedBySat.length * 0.2));
+    for (let i = 0; i < k; i++) {
+        const randIdx = Math.floor(Math.random() * topCount);
+        centers.push([...sortedBySat[randIdx].p]);
+    }
+    
+    for (let iter = 0; iter < iterations; iter++) {
+        const clusters = Array.from({ length: k }, () => []);
+        const clusterWeights = Array.from({ length: k }, () => 0);
+
+        for (let i = 0; i < pixels.length; i++) {
+            const p = pixels[i];
+            const weight = pixelWeights[i];
+            let minDist = Infinity, bestK = 0;
+            
+            for (let j = 0; j < k; j++) {
+                const c = centers[j];
+                // 简单的欧氏距离
+                const d = Math.pow(p[0]-c[0], 2) + Math.pow(p[1]-c[1], 2) + Math.pow(p[2]-c[2], 2);
+                if (d < minDist) { minDist = d; bestK = j; }
+            }
+            clusters[bestK].push(p);
+            clusterWeights[bestK] += weight;
+        }
+
+        centers = clusters.map((cluster, i) => {
+            if (cluster.length === 0) return centers[i];
+            
+            // 使用加权平均计算新的中心点
+            let sumR = 0, sumG = 0, sumB = 0, totalW = 0;
+            for (const p of cluster) {
+                // 这里重新查找像素对应的权重（为了性能可以优化，但目前数据量小）
+                // 重新计算饱和度权重
+                const w = 1 + getSaturation(p[0], p[1], p[2]) * 5;
+                sumR += p[0] * w;
+                sumG += p[1] * w;
+                sumB += p[2] * w;
+                totalW += w;
+            }
+            return [sumR / totalW, sumG / totalW, sumB / totalW];
+        });
+    }
+
+    // 最后根据聚类中像素的平均饱和度对中心点进行排序
+    // 这样提取出来的颜色列表中，鲜艳的颜色会排在前面
+    return centers.sort((a, b) => {
+        const satA = getSaturation(a[0], a[1], a[2]);
+        const satB = getSaturation(b[0], b[1], b[2]);
+        return satB - satA;
+    });
+}
+
 // 重置按钮
 if (resetAllBtn) {
-    resetAllBtn.addEventListener("click", () => {
-        // 清空颜色选择
-        colorInputsContainer.innerHTML = "";
+        resetAllBtn.addEventListener("click", () => {
+            // 清空颜色选择
+            colorInputsContainer.innerHTML = "";
+            if (uploadPreviewContainer) uploadPreviewContainer.style.display = "none";
+            if (uploadPreviewImg) uploadPreviewImg.src = "";
 
         // 清空搜索框和下拉建议
         clearSearchBox();
@@ -1763,7 +2177,7 @@ async function loadData() {
         renderResults(filteredPokemon, [], matchModeSelect.value);
     } catch (e) {
         console.error(e);
-        showToast(e.message || "加载数据失败");
+        // showToast(e.message || "加载数据失败");
     }
 }
 

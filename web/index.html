@@ -38,6 +38,21 @@
 
         <main class="app-main">
             <section class="panel panel-left" aria-label="颜色选择">
+                <section class="panel-subsection" id="section-image-extraction" style="margin-bottom: 24px;">
+                    <h1 class="panel-title" id="title-image-extraction">图片提取</h1>
+                    <p class="panel-subtitle" id="subtitle-image-extraction">上传图片或直接使用 Ctrl + V 粘贴图片进行提取。</p>
+                    <div id="upload-preview-container" class="upload-preview-container">
+                        <img id="upload-preview" src="" alt="Preview" />
+                    </div>
+                    <div class="color-actions">
+                        <label for="image-upload" class="primary-button" id="label-upload-image" style="cursor:pointer; display:inline-flex; align-items:center; justify-content:center;">
+                            上传图片
+                            <input type="file" id="image-upload" accept="image/*" style="display:none" />
+                        </label>
+                        <button id="clear-upload" class="ghost-button">清空</button>
+                    </div>
+                </section>
+                
                 <h1 class="panel-title" id="title-select-colors">选择颜色</h1>
                 <p class="panel-subtitle" id="subtitle-select-colors">最多 5 个颜色，用于匹配宝可梦主色调。</p>
 

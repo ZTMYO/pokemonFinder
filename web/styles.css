@@ -226,6 +226,29 @@ body.theme-light .header-actions .icon-toggle {
     margin-top: 12px;
 }
 
+.upload-preview-container {
+    display: none;
+    margin-bottom: 12px;
+    justify-content: center;
+    align-items: center;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #222;
+    background: transparent;
+    min-height: 40px;
+}
+
+body.theme-light .upload-preview-container {
+    border-color: #e0e0e0;
+}
+
+.upload-preview-container img {
+    max-width: 100%;
+    max-height: 200px;
+    display: block;
+    object-fit: contain;
+}
+
 .subsection-title {
     font-size: 14px;
     margin-bottom: 8px;
@@ -294,6 +317,7 @@ body.theme-light .header-actions .icon-toggle {
 }
 
 .primary-button,
+.secondary-button,
 .ghost-button {
     border-radius: 999px;
     padding: 6px 14px;
@@ -314,6 +338,17 @@ body.theme-light .header-actions .icon-toggle {
 .primary-button:hover {
     background: #e4e4e4;
     border-color: #e4e4e4;
+}
+
+.secondary-button {
+    background: #333;
+    color: #fff;
+    border-color: #444;
+}
+
+.secondary-button:hover {
+    background: #444;
+    border-color: #555;
 }
 
 .primary-button-full {
