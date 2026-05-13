@@ -296,8 +296,10 @@ function setLang(lang) {
     if (hasColorInputs) {
         const colors = collectSelectedColors();
         if (colors.length) {
-            clearSearchBox();
-            runSearch();
+            // 如果搜索框有内容，不执行清空，让 rerenderResultsByIndices 处理渲染
+            if (searchInput && !searchInput.value.trim()) {
+                runSearch();
+            }
         }
     }
 
@@ -1035,6 +1037,8 @@ function renderResults(list, queryColors, mode) {
 }
 
 function matchByNameOrPinyin(p, qLower) {
+    const indexMatch = typeof p.index === "string" && p.index.includes(qLower);
+    
     // 中文模式：按中文名 + 拼音模糊 / 前缀匹配
     if (currentLang === "zh") {
         const zhName = typeof p.name === "string" ? p.name.toLowerCase() : "";
@@ -1051,12 +1055,14 @@ function matchByNameOrPinyin(p, qLower) {
             // 首字母仍然用前缀匹配，适配 PKQ 这类输入
             (initials && initials.startsWith(qLower));
 
-        return nameMatch || pinyinMatch;
+        return nameMatch || pinyinMatch || indexMatch;
     }
 
     // 英文模式：仅按英文名模糊匹配
     const enName = typeof p.name_en === "string" ? p.name_en.toLowerCase() : "";
-    return enName && enName.includes(qLower);
+    const enMatch = enName && enName.includes(qLower);
+    
+    return enMatch || indexMatch;
 }
 
 function showPokemonAsSingleResult(p, labelOverride, queryLabel) {
@@ -1475,9 +1481,10 @@ function runTextSearch() {
 
     const matches = allPokemon.filter((p) => matchByNameOrPinyin(p, qLower));
 
+    const prefix = currentLang === "zh" ? "搜索" : "Search";
+    activeFiltersEl.textContent = `${prefix}: ${q}`;
+
     if (!matches.length) {
-        const prefix = currentLang === "zh" ? "搜索" : "Search";
-        activeFiltersEl.textContent = `${prefix}: ${q}`;
         resultsContainer.innerHTML = "";
         const empty = document.createElement("div");
         empty.textContent =
@@ -1487,20 +1494,23 @@ function runTextSearch() {
         empty.style.fontSize = "13px";
         empty.style.color = "#888";
         resultsContainer.appendChild(empty);
-        if (searchSuggestions) {
-            searchSuggestions.innerHTML = "";
-            searchSuggestions.classList.remove("visible");
+    } else if (matches.length === 1) {
+        const p = matches[0];
+        const baseName =
+            currentLang === "zh"
+                ? p.name || p.name_en || q
+                : p.name_en || p.name || q;
+        const labelOverride = p.index ? `${p.index}-${baseName}` : baseName;
+        showPokemonAsSingleResult(p, labelOverride, baseName);
+    } else {
+        // 多个匹配：展示所有结果卡片
+        resultsContainer.innerHTML = "";
+        for (const p of matches) {
+            const card = createResultCard(p);
+            resultsContainer.appendChild(card);
         }
-        return;
     }
 
-    const p = matches[0];
-    const baseName =
-        currentLang === "zh"
-            ? p.name || p.name_en || q
-            : p.name_en || p.name || q;
-    const labelOverride = p.index ? `${p.index}-${baseName}` : baseName;
-    showPokemonAsSingleResult(p, labelOverride, baseName);
     if (searchSuggestions) {
         searchSuggestions.innerHTML = "";
         searchSuggestions.classList.remove("visible");
