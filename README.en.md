@@ -9,7 +9,7 @@ The frontend is a purely static site. No backend service is required and all com
 ## Features
 
 - **Appearance → Name: match Pokémon by main colors**
-  - Add up to 5 colors via color picker or hex values.
+  - **Image Extraction (New)**: Support for direct image uploads or pasting from the clipboard via `Ctrl + V`. The system automatically extracts key feature colors using the K-Means algorithm.
   - Click `Run match` to search the whole sprite set for Pokémon whose palettes best match your selected colors.
 
 - **Name → Appearance: search by name / pinyin**
