@@ -943,17 +943,17 @@ function computeColorScore(pokeColorsHex, queryColors, mode) {
 
     if (!pokeRgbList.length) return Infinity;
 
-    // 1. 预处理查询颜色：计算饱和度、色相分类和权重
+    // 1. 预处理查询颜色
     const queryColorsData = queryColors.map(qc => {
         const r = qc.rgb[0], g = qc.rgb[1], b = qc.rgb[2];
         const max = Math.max(r, g, b), min = Math.min(r, g, b);
         const sat = max - min;
-        const weight = 1.0 + (sat / 255) * 4.0; // 进一步拉大饱和度权重
+        // 适度增加饱和度权重 (1.0 ~ 4.0)
+        const weight = 1.0 + (sat / 255) * 3.0; 
         const hue = getHue(r, g, b, max, min);
-        const isGrey = sat < 20;
-        // 将色相分为 12 个区间，用于覆盖率检查
-        const hueBin = isGrey ? -1 : Math.floor(hue / 30);
-        return { ...qc, weight, sat, hue, hueBin, isGrey };
+        // 恢复稳定的灰色阈值
+        const isGrey = sat < 18;
+        return { ...qc, weight, sat, hue, isGrey };
     });
 
     // 2. 预处理宝可梦颜色
@@ -962,9 +962,8 @@ function computeColorScore(pokeColorsHex, queryColors, mode) {
         const max = Math.max(r, g, b), min = Math.min(r, g, b);
         const sat = max - min;
         const hue = getHue(r, g, b, max, min);
-        const isGrey = sat < 20;
-        const hueBin = isGrey ? -1 : Math.floor(hue / 30);
-        return { rgb: pc, sat, hue, hueBin, isGrey };
+        const isGrey = sat < 18;
+        return { rgb: pc, sat, hue, isGrey };
     });
 
     if (mode === "average") {
@@ -987,9 +986,8 @@ function computeColorScore(pokeColorsHex, queryColors, mode) {
     // 默认模式：综合匹配评分
     let totalForwardDist = 0;
     const matchedPokeIndices = new Set();
-    const coveredHueBins = new Set();
 
-    // 正向匹配：每一个查询颜色都要在宝可梦身上找到“归宿”
+    // 正向匹配：每一个查询颜色都要在宝可梦身上找到最接近的颜色
     for (const qc of queryColorsData) {
         let bestDist = Infinity;
         let bestIdx = -1;
@@ -1006,21 +1004,35 @@ function computeColorScore(pokeColorsHex, queryColors, mode) {
         if (bestIdx !== -1) {
             totalForwardDist += bestDist * qc.weight;
             matchedPokeIndices.add(bestIdx);
-            if (!qc.isGrey) coveredHueBins.add(qc.hueBin);
         }
     }
 
-    // 色相覆盖率惩罚：如果查询里有红、黄、紫，宝可梦必须也都有
+    // 3. 柔性色相覆盖率检查 (Soft Hue Coverage)
+    // 解决“硬性过滤”导致的色差误杀问题
     let coveragePenalty = 0;
-    const requiredHueBins = new Set(queryColorsData.filter(qc => !qc.isGrey).map(qc => qc.hueBin));
-    for (const bin of requiredHueBins) {
-        if (!pokeColorsData.some(pc => !pc.isGrey && pc.hueBin === bin)) {
-            // 缺失一个色系，给予巨额惩罚
-            coveragePenalty += 50000;
+    for (const qc of queryColorsData) {
+        if (qc.isGrey) continue;
+
+        // 找到宝可梦身上色相最接近的鲜艳颜色
+        let minHueDiff = 180;
+        let hasVibrantPokeColor = false;
+        
+        for (const pc of pokeColorsData) {
+            if (pc.isGrey) continue;
+            hasVibrantPokeColor = true;
+            let dh = Math.abs(qc.hue - pc.hue);
+            if (dh > 180) dh = 360 - dh;
+            if (dh < minHueDiff) minHueDiff = dh;
+        }
+
+        // 如果宝可梦根本没有鲜艳色，或者最接近的色相也超过 45 度（不同色系）
+        if (!hasVibrantPokeColor || minHueDiff > 45) {
+            // 惩罚与查询色的饱和度成正比
+            coveragePenalty += (qc.sat * 200) + (minHueDiff * 100);
         }
     }
 
-    // 反向匹配惩罚：宝可梦多出来的颜色
+    // 4. 反向匹配惩罚：宝可梦身上多出来的“不匹配”颜色
     let reversePenalty = 0;
     for (let i = 0; i < pokeColorsData.length; i++) {
         if (matchedPokeIndices.has(i)) continue;
@@ -1033,9 +1045,9 @@ function computeColorScore(pokeColorsHex, queryColors, mode) {
         }
         
         if (minQueryDist !== Infinity) {
-            // 宝可梦多出来的颜色如果是鲜艳的，且不在查询的色系中，惩罚更重
-            const pWeight = 1.0 + (pc.sat / 255) * 3.0;
-            reversePenalty += minQueryDist * 1.5 * pWeight;
+            // 宝可梦多出来的颜色如果是鲜艳的，且距离所有查询色都很远，惩罚加重
+            const pWeight = 1.0 + (pc.sat / 255) * 2.0;
+            reversePenalty += minQueryDist * 1.2 * pWeight;
         }
     }
 
